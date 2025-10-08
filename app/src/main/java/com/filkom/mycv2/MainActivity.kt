@@ -94,18 +94,3 @@ fun AppNav() {
         }
     }
 }
-
-// =============================
-// screen/LoginScreen.kt (ganti seluruh isi file)
-// =============================
-
-
-// =============================
-// screen/DaftarScreen.kt (ganti seluruh isi file)
-// =============================
-
-
-// =============================
-// screen/DetailScreen.kt (ganti seluruh isi file)
-// =============================
-
