@@ -39,7 +39,6 @@ private fun dec(s: String): String = URLDecoder.decode(s, StandardCharsets.UTF_8
 
 sealed class Route(val route: String) {
     data object Login : Route("login")
-    // Detail menerima 4 argumen (boleh kosong): nim, nama, email, alamat
     data object Detail : Route("detail/{nim}/{nama}/{email}/{alamat}") {
         fun build(nim: String, nama: String, email: String = "", alamat: String = ""): String {
             return "detail/${enc(nim)}/${enc(nama)}/${enc(email)}/${enc(alamat)}"
