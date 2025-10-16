@@ -6,19 +6,22 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import com.filkom.mycv2.ui.theme.MyCV2Theme
-import androidx.navigation.NavType
+import androidx.compose.runtime.Composable
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import java.net.URLEncoder
-import java.net.URLDecoder
-import java.nio.charset.StandardCharsets
-import com.filkom.mycv2.screen.LoginScreen
 import com.filkom.mycv2.screen.DaftarScreen
 import com.filkom.mycv2.screen.DetailScreen
-import androidx.compose.runtime.Composable
-import androidx.navigation.navArgument
+import com.filkom.mycv2.screen.LoginScreen
+import com.filkom.mycv2.ui.theme.MyCV2Theme
+import com.filkom.mycv2.vm.AuthViewModel
+
+sealed class Route(val route: String) {
+    data object Login : Route("login")
+    data object Daftar : Route("daftar")
+    data object Detail : Route("detail")
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,60 +37,59 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private fun enc(s: String): String = URLEncoder.encode(s, StandardCharsets.UTF_8.toString())
-private fun dec(s: String): String = URLDecoder.decode(s, StandardCharsets.UTF_8.toString())
-
-sealed class Route(val route: String) {
-    data object Login : Route("login")
-    data object Detail : Route("detail/{nim}/{nama}/{email}/{alamat}") {
-        fun build(nim: String, nama: String, email: String = "", alamat: String = ""): String {
-            return "detail/${enc(nim)}/${enc(nama)}/${enc(email)}/${enc(alamat)}"
-        }
-    }
-    data object Daftar : Route("daftar")
-}
-
 @Composable
 fun AppNav() {
     val nav = rememberNavController()
+    val vm: AuthViewModel = viewModel() // <- ViewModel bersama (shared)
 
     NavHost(navController = nav, startDestination = Route.Login.route) {
+
         composable(Route.Login.route) {
             LoginScreen(
-                onLogin = { nim, nama ->
-                    nav.navigate(Route.Detail.build(nim, nama))
+                nim = vm.loginForm.nim,
+                nama = vm.loginForm.nama,
+                isLoading = vm.isLoading,
+                errorMessage = vm.errorMessage,
+                onNimChange = vm::onLoginNim,
+                onNamaChange = vm::onLoginNama,
+                onDismissError = vm::clearError,
+                onLogin = {
+                    vm.login {
+                        nav.navigate(Route.Detail.route)
+                    }
                 },
-                onDaftar = {
-                    nav.navigate(Route.Daftar.route)
-                }
+                onDaftar = { nav.navigate(Route.Daftar.route) }
             )
         }
+
         composable(Route.Daftar.route) {
             DaftarScreen(
-                onSimpan = { nim, nama, email, alamat ->
-                    nav.navigate(Route.Detail.build(nim, nama, email, alamat))
+                nim = vm.registerForm.nim,
+                nama = vm.registerForm.nama,
+                email = vm.registerForm.email,
+                alamat = vm.registerForm.alamat,
+                isLoading = vm.isLoading,
+                errorMessage = vm.errorMessage,
+                onNimChange = vm::onRegNim,
+                onNamaChange = vm::onRegNama,
+                onEmailChange = vm::onRegEmail,
+                onAlamatChange = vm::onRegAlamat,
+                onDismissError = vm::clearError,
+                onSimpan = {
+                    vm.register {
+                        nav.navigate(Route.Detail.route)
+                    }
                 }
             )
         }
-        composable(
-            route = Route.Detail.route,
-            arguments = listOf(
-                navArgument("nim") { type = NavType.StringType },
-                navArgument("nama") { type = NavType.StringType },
-                navArgument("email") { type = NavType.StringType },
-                navArgument("alamat") { type = NavType.StringType }
-            )
-        ) { backStack ->
-            val nim = dec(backStack.arguments?.getString("nim") ?: "")
-            val nama = dec(backStack.arguments?.getString("nama") ?: "")
-            val email = dec(backStack.arguments?.getString("email") ?: "")
-            val alamat = dec(backStack.arguments?.getString("alamat") ?: "")
 
+        composable(Route.Detail.route) {
+            val u = vm.currentUser
             DetailScreen(
-                nim = nim,
-                nama = nama,
-                email = email,
-                alamat = alamat,
+                nim = u?.nim.orEmpty(),
+                nama = u?.nama.orEmpty(),
+                email = u?.email.orEmpty(),
+                alamat = u?.alamat.orEmpty(),
                 onDaftar = { nav.navigate(Route.Daftar.route) }
             )
         }
